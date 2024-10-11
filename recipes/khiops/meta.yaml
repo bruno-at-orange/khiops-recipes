@@ -1,0 +1,94 @@
+# Note: there are many handy hints in comments in this example -- remove them when you've finalized your recipe
+# If your package is python based, we recommend using Grayskull to generate it instead:
+# https://github.com/conda-incubator/grayskull
+
+# Jinja variables help maintain the recipe as you'll update the version only here.
+# Using the name variable with the URL in line 16 is convenient
+# when copying and pasting from another recipe, but not really needed.
+
+{% set name = "khiops" %}
+{% set version = "10.2.3-b.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version.replace("-", ".") }}
+
+source:
+  url: https://github.com/KhiopsML/khiops/archive/refs/tags/{{ version }}.tar.gz
+  sha256: ce7e8d773cfae51eacc360ff90f9317a58fb02e08676afff3d4a5e48245d90b5
+build:
+  number: 0
+
+requirements:
+  build:
+    - cmake
+    - ninja
+    - {{ compiler('cxx') }}
+
+  host:
+    - {{ mpi }}
+  run:
+    - {{ mpi }}
+
+outputs:
+
+  # khiops-core package
+  - name: khiops-core
+    version: {{ version.replace("-", ".") }}
+    requirements:
+      build:
+        - cmake
+        - ninja
+        - {{ compiler('cxx') }}
+      host:
+        - {{ mpi }}
+      run:
+        - {{ mpi }}
+    files:
+      - bin/MODL*
+      - bin/_khiopsgetprocnumber*
+      - bin/khiops_env # [linux or osx]
+      - bin/khiops # [linux or osx]
+      - bin/khiops_coclustering # [linux or osx]
+      - bin/khiops_env.cmd # [win]
+      - bin/khiops.cmd # [win]
+      - bin/khiops_coclustering.cmd # [win]
+    test:
+      commands:
+        - khiops_env --env
+        - khiops -s
+        - khiops_coclustering -s
+
+  # kni package (do not need khiops-core as a runtime dependency)
+  - name: kni
+    version: {{ version.replace("-", ".") }}
+    files:
+      - lib/libKhiopsNativeInterface.so* # [linux]
+      - lib/libKhiopsNativeInterface*.dylib # [osx]
+      - bin/KhiopsNativeInterface.dll # [win]
+      - lib/KhiopsNativeInterface.lib # [win]
+    requirements:
+      build:
+        - cmake
+        - ninja
+        - {{ compiler('cxx') }}
+
+#test:
+  # Some packages might need a `test/commands` key to check CLI.
+  # List all the packages/modules that `run_test.py` imports.
+#  imports:
+#    - simplejson
+#    - simplejson.tests
+  # For python packages, it is useful to run pip check. However, sometimes the
+  # metadata used by pip is out of date. Thus this section is optional if it is  # failing.
+#  requires:
+#    - pip
+#  commands:
+#    - pip check
+
+about:
+  home: https://khiops.org
+  license: BSD+3-clause
+  summary: Khiops is an AutoML suite for supervised and unsupervised learning
+  doc_url: https://khiops.org
+  dev_url: https://github.com/khiopsml/khiops
